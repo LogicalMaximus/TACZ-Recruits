@@ -1,0 +1,70 @@
+
+#Recruit TACZ Server Config
+["Accuracy Values"]
+	#
+	#The Radius For The Aiming Cone For Pistol Category
+	#	(Smaller Radius = More Accurate)
+	PistolInaccuracy = 1.25
+	#
+	#The Radius For The Aiming Cone For Rifle Category
+	#	(Smaller Radius = More Accurate)
+	RifleInaccuracy = 1.5
+	#
+	#The Radius For The Aiming Cone For Sniper Category
+	#	(Smaller Radius = More Accurate)
+	SniperRifleInaccuracy = 0.75
+	#
+	#The Radius For The Aiming Cone For SMG Category
+	#	(Smaller Radius = More Accurate)
+	SMGInaccuracy = 1.75
+	#
+	#The Radius For The Aiming Cone For RPG Category
+	#	(Smaller Radius = More Accurate)
+	RPGInaccuracy = 1.65
+	#
+	#The Radius For The Aiming Cone For Shotgun Category
+	#	(Smaller Radius = More Accurate)
+	ShotgunInaccuracy = 1.85
+	#
+	#The Radius For The Aiming Cone For Machine Gun Category
+	#	(Smaller Radius = More Accurate)
+	MGInaccuracy = 2.25
+	#
+	#Increases Aiming Cone When Recruits Are Using Suppressive Fire On Enemies
+	#	(Smaller Multiplier = More Accurate)
+	SuppressiveFireInaccuracyMultiplier = 1.75
+
+["AI Behaviour"]
+	#How Far Recruits Will Run For Cover
+	RecruitCoverRadius = 16
+	#Whether Recruits Should Run To Cover From Enemies
+	ShouldRecruitsRunToCover = true
+	#
+	#The Radius At Which A Bullet Will Suppressive Recruits 
+	#	(takes effect after restart)
+	BulletSuppressionRadius = 4
+	#
+	#Whether Recruits Should Attempt Crouch And Prone In A Gunfight 
+	#	(takes effect after restart)
+	ShouldRecruitPose = true
+	#
+	# The Cooldown On How Often A Recruit Can Change It's Pose In Ticks
+	#	(takes effect after restart)
+	RecruitPoseCooldown = 200
+	#
+	# The Chance At Which A Recruit Changes It's Pose 
+	#	(takes effect after restart)
+	RecruitPoseChance = 0.1
+	#
+	# Whether Recruits Should Use Suppressive Fire 
+	#	(takes effect after restart)
+	ShouldUseSuppressiveFire = true
+	#
+	#Whether Recruits Should Switch Weapons Based On The Target And Weapon Stats 
+	#	(takes effect after restart)
+	ShouldRecruitsWeaponSwitch = true
+	#
+	#The Weapon Switch Cooldown On Recruits In Ticks
+	#	(takes effect after restart)
+	WeaponSwitchCooldown = 100
+

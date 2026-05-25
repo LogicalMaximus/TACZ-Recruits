@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.logic.recruitstacz.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "recruitstacz.refmap.json",
+  "mixins": [
+    "MixinAbstractInventoryEntity",
+    "MixinAbstractRecruitEntity",
+    "MixinAttackUtil",
+    "MixinBowmanEntity",
+    "tacz.AccessorPlayerAnimatorAssetManager",
+    "tacz.MixinInnerThirdPersonManager",
+    "tacz.MixinLivingEntityAmmoCheck"
+  ],
+  "client": [
+    "client.MixinRecruitHumanRenderer",
+    "client.MixinRecruitVillagerModel",
+    "client.MixinRecruitVillagerRenderer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

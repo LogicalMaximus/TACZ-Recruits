@@ -1,0 +1,18 @@
+
+[armor_values]
+	#Base armor value for helmets
+	#Range: 0 ~ 100
+	helmet = 3
+	#Base armor value for chestplates
+	#Range: 0 ~ 100
+	chestplate = 8
+	#Base armor value for leggings
+	#Range: 0 ~ 100
+	leggings = 6
+	#Armor value for shoulderpads
+	#Range: 0 ~ 100
+	shoulderpads = 2
+	#Armor value for backpacks
+	#Range: 0 ~ 100
+	backpacks = 1
+
