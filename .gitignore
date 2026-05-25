@@ -18,5 +18,6 @@ gradle-app.setting
 # Eclipse Core
 .project
 .idea
+run
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
