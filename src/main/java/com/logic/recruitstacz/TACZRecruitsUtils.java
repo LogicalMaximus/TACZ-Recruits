@@ -53,6 +53,72 @@ public class TACZRecruitsUtils {
         return 0;
     }
 
+    @javax.annotation.Nullable
+    public static int getGunTargetAmmo(ItemStack gunStack) {
+        Item var2 = gunStack.getItem();
+        if (var2 instanceof ModernKineticGunItem) {
+            ModernKineticGunItem gun = (ModernKineticGunItem)var2;
+            switch (((CommonGunIndex)TimelessAPI.getCommonGunIndex(gun.getGunId(gunStack)).get()).getType()) {
+                case "pistol" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_PISTOL.get();
+                }
+                case "rifle" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_RIFLE.get();
+                }
+                case "sniper" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_SNIPER.get();
+                }
+                case "smg" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_SMG.get();
+                }
+                case "rpg" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_RPG.get();
+                }
+                case "shotgun" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_SHOTGUN.get();
+                }
+                case "mg" -> {
+                    return TACZRecruitsConfig.TARGET_AMMO_MG.get();
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    @javax.annotation.Nullable
+    public static boolean shouldSuppressiveFire(ItemStack gunStack) {
+        Item var2 = gunStack.getItem();
+        if (var2 instanceof ModernKineticGunItem) {
+            ModernKineticGunItem gun = (ModernKineticGunItem)var2;
+            switch (((CommonGunIndex)TimelessAPI.getCommonGunIndex(gun.getGunId(gunStack)).get()).getType()) {
+                case "pistol" -> {
+                    return TACZRecruitsConfig.SHOULD_PISTOL_SUPPRESSION.get();
+                }
+                case "rifle" -> {
+                    return TACZRecruitsConfig.SHOULD_RIFLE_SUPPRESSION.get();
+                }
+                case "sniper" -> {
+                    return TACZRecruitsConfig.SHOULD_SNIPER_SUPPRESSION.get();
+                }
+                case "smg" -> {
+                    return TACZRecruitsConfig.SHOULD_SMG_SUPPRESSION.get();
+                }
+                case "rpg" -> {
+                    return TACZRecruitsConfig.SHOULD_RPG_SUPPRESSION.get();
+                }
+                case "shotgun" -> {
+                    return TACZRecruitsConfig.SHOULD_SHOTGUN_SUPPRESSION.get();
+                }
+                case "mg" -> {
+                    return TACZRecruitsConfig.SHOULD_MG_SUPPRESSION.get();
+                }
+            }
+        }
+
+        return false;
+    }
+
     public static int recruitShootGun(AbstractRecruitEntity recruit) {
         ((IGunOperator)recruit).aim(true);
         ShootResult result = ((IGunOperator)recruit).shoot(() -> {
@@ -61,29 +127,14 @@ public class TACZRecruitsUtils {
             return recruit.getViewYRot((float) Math.random());
         });
 
-        if(result == ShootResult.NOT_DRAW) {
+        if(result == ShootResult.SUCCESS){
+            return TACZRecruitsConfig.WEAPON_SHOOT_COOLDOWN.get();
+        } else if(result == ShootResult.NOT_DRAW) {
             ((IGunOperator)recruit).draw(recruit::getMainHandItem);
         } else if (result == ShootResult.NEED_BOLT) {
             ((IGunOperator)recruit).bolt();
         } else if (result == ShootResult.NO_AMMO) {
             ((IGunOperator)recruit).reload();
-
-            /*
-            ItemStack mainHandItem = recruit.getMainHandItem();
-
-            if(mainHandItem.getItem() instanceof AbstractGunItem gunItem) {
-                Optional<CommonGunIndex> optCommonGunIndex = TimelessAPI.getCommonGunIndex(gunItem.getGunId(mainHandItem));
-
-                if(optCommonGunIndex.isPresent()) {
-                    CommonGunIndex commonGunIndex = optCommonGunIndex.get();
-
-                    GunData gunData = commonGunIndex.getGunData();
-
-                    return (int)(gunData.getReloadData().getFeed().getEmptyTime() + gunData.getReloadData().getCooldown().getEmptyTime());
-                }
-            }
-
-             */
         }
 
         return 0;
