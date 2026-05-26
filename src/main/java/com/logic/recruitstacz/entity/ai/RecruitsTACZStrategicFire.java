@@ -30,6 +30,9 @@ public class RecruitsTACZStrategicFire extends Goal {
         if(!this.bowman.getShouldRanged())
             return false;
 
+        if(this.bowman.getVehicle() != null && !TACZRecruitsConfig.SHOULD_RECRUITS_USE_WEAPON_WHEN_MOUNTED.get())
+            return false;
+
         if(this.bowman.getMainHandItem().getItem() instanceof IGun) {
             if (this.bowman.getTarget() == null && this.bowman.getShouldStrategicFire()  && this.bowman.getFollowState() != 5 && !this.bowman.getShouldMount()) {
                 return true;

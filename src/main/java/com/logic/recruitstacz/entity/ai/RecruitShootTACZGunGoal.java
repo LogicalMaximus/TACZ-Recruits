@@ -2,6 +2,7 @@ package com.logic.recruitstacz.entity.ai;
 
 import com.logic.recruitstacz.TACZRecruits;
 import com.logic.recruitstacz.TACZRecruitsUtils;
+import com.logic.recruitstacz.config.TACZRecruitsConfig;
 import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.entity.ShootResult;
@@ -40,9 +41,15 @@ public class RecruitShootTACZGunGoal extends Goal {
         if(!(this.recruit.getMainHandItem().getItem() instanceof IGun))
             return false;
 
+        if(this.recruit.getVehicle() != null && !TACZRecruitsConfig.SHOULD_RECRUITS_USE_WEAPON_WHEN_MOUNTED.get())
+            return false;
+
         this.target = this.recruit.getTarget();
 
         if(this.target != null) {
+            if(!this.recruit.getSensing().hasLineOfSight(this.target))
+                return false;
+
             boolean shouldRanged = this.recruit.getShouldRanged();
             boolean canAttack = this.recruit.canAttack(this.target);
             boolean notPassive = this.recruit.getState() != 3;
@@ -71,7 +78,7 @@ public class RecruitShootTACZGunGoal extends Goal {
 
     @Override
     public void tick() {
-        if (this.target != null && this.recruit.getSensing().hasLineOfSight(this.target)) {
+        if (this.target != null) {
             Entity targetVehicle = this.target.getVehicle();
             Entity aimTarget;
 

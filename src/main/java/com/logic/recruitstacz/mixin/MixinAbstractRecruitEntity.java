@@ -1,28 +1,41 @@
 package com.logic.recruitstacz.mixin;
 
 import com.google.common.collect.ImmutableMap;
+import com.logic.recruitstacz.TACZRecruitsUtils;
 import com.logic.recruitstacz.bridge.IPoser;
+import com.logic.recruitstacz.bridge.ISpotter;
 import com.logic.recruitstacz.bridge.ISwapper;
 import com.logic.recruitstacz.entity.ai.*;
-import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.item.IGun;
-import com.talhanation.recruits.entities.AbstractInventoryEntity;
-import com.talhanation.recruits.entities.AbstractRecruitEntity;
+import com.tacz.guns.api.item.gun.AbstractGunItem;
+import com.tacz.guns.item.AmmoItem;
+import com.talhanation.recruits.Main;
+import com.talhanation.recruits.compat.musketmod.IWeapon;
+import com.talhanation.recruits.config.RecruitsServerConfig;
+import com.talhanation.recruits.entities.*;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 
 @Mixin(AbstractRecruitEntity.class)
-public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity implements IPoser, ISwapper {
+public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity implements IPoser, ISwapper, ISpotter {
 
     @Unique
     private static final EntityDimensions STANDING_DIMENSIONS = EntityDimensions.scalable(0.6F, 1.8F);
@@ -36,6 +49,9 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
     @Unique
     private int weaponSwitchCooldown;
 
+    @Unique
+    private TargetMarker lastKnownEnemyPos;
+
     public MixinAbstractRecruitEntity(EntityType<? extends AbstractInventoryEntity> entityType, Level world) {
         super(entityType, world);
     }
@@ -43,7 +59,7 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
     @Inject(at=@At("TAIL"), method = "registerGoals")
     protected void registerGoals(CallbackInfo ci) {
         this.goalSelector.addGoal(2, new RecruitShootTACZGunGoal(((AbstractRecruitEntity)(Object)this)));
-        this.goalSelector.addGoal(3, new RecruitsFindCoverFromTargetGoal<>(((AbstractRecruitEntity)(Object)this), 1.25));
+        this.goalSelector.addGoal(2, new RecruitsFindCoverFromTargetGoal<>(((AbstractRecruitEntity)(Object)this), 1.25));
         this.goalSelector.addGoal(3, new RecruitsChangePoseGoal<>(((AbstractRecruitEntity)(Object)this)));
         this.goalSelector.addGoal(3, new RecruitSuppressTACZGunGoal(((AbstractRecruitEntity)(Object)this)));
         this.goalSelector.addGoal(3, new RecruitWeaponSwitch(((AbstractRecruitEntity)(Object)this)));
@@ -96,6 +112,15 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
         weaponSwitchCooldown--;
     }
 
+    @Inject(method = "needsToGetFood", at = @At("HEAD"), cancellable = true, remap = false)
+    public void needsToGetFood(CallbackInfoReturnable<Boolean> cir) {
+        ItemStack mainHandItem = this.getMainHandItem();
+
+        if(mainHandItem.getItem() instanceof IGun && this.getAmmoCount(mainHandItem) <= 0 && RecruitsServerConfig.RangedRecruitsNeedArrowsToShoot.get()) {
+            cir.setReturnValue(true);
+        }
+    }
+
     @Override
     public void changePose() {
         if(this.getPose() == Pose.STANDING) {
@@ -113,5 +138,126 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
     @Override
     public int getPoseCooldown() {
         return poseCooldown;
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public void upkeepReequip(@NotNull Container container) {
+        for(int i = 0; i < container.getContainerSize(); ++i) {
+            ItemStack itemstack = container.getItem(i);
+            if (!this.canEatItemStack(itemstack) && this.wantsToPickUp(itemstack)) {
+                label63: {
+                    if (this.canEquipItem(itemstack)) {
+                        ItemStack equipment = itemstack.copy();
+                        equipment.setCount(1);
+                        this.equipItem(equipment);
+                        itemstack.shrink(1);
+                    }
+
+                    if (((AbstractRecruitEntity)(Object)this) instanceof CrossBowmanEntity) {
+                        CrossBowmanEntity crossBowmanEntity = (CrossBowmanEntity)((AbstractRecruitEntity)(Object)this);
+                        if (Main.isMusketModLoaded && IWeapon.isMusketModWeapon(crossBowmanEntity.getMainHandItem()) && itemstack.getDescriptionId().contains("cartridge")) {
+                            if (this.canTakeCartridge()) {
+                                ItemStack equipment = itemstack.copy();
+                                this.inventory.addItem(equipment);
+                                itemstack.shrink(equipment.getCount());
+                            }
+                            break label63;
+                        }
+                    }
+
+                    if (this instanceof IRangedRecruit && itemstack.is(ItemTags.ARROWS) && this.canTakeArrows()) {
+                        ItemStack equipment = itemstack.copy();
+                        this.inventory.addItem(equipment);
+                        itemstack.shrink(equipment.getCount());
+                    }
+
+                    ItemStack mainHandItem = this.getMainHandItem();
+
+                    if (mainHandItem.getItem() instanceof IGun) {
+                        if(itemstack.getItem() instanceof AmmoItem ammoItem) {
+                            if(ammoItem.isAmmoOfGun(mainHandItem, itemstack)) {
+                                if(this.canTakeAmmoForGun(mainHandItem)) {
+                                    for(int j = 5; j < 15; j++) {
+                                        ItemStack itemStack = this.inventory.getItem(j);
+
+                                        if(itemStack.isEmpty()) {
+                                            ItemStack equipment = itemstack.copy();
+                                            this.inventory.setItem(j, equipment);
+                                            itemstack.shrink(equipment.getCount());
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (((AbstractRecruitEntity)(Object)this) instanceof CaptainEntity && Main.isSmallShipsLoaded) {
+                if (itemstack.getDescriptionId().contains("cannon_ball")) {
+                    if (this.canTakeCannonBalls()) {
+                        ItemStack equipment = itemstack.copy();
+                        this.inventory.addItem(equipment);
+                        itemstack.shrink(equipment.getCount());
+                    }
+                } else if (itemstack.is(ItemTags.PLANKS)) {
+                    if (this.canTakePlanks()) {
+                        ItemStack equipment = itemstack.copy();
+                        this.inventory.addItem(equipment);
+                        itemstack.shrink(equipment.getCount());
+                    }
+                } else if (itemstack.is(Items.IRON_NUGGET) && this.canTakeIronNuggets()) {
+                    ItemStack equipment = itemstack.copy();
+                    this.inventory.addItem(equipment);
+                    itemstack.shrink(equipment.getCount());
+                }
+            }
+        }
+
+    }
+
+    @Unique
+    private boolean canTakeAmmoForGun(ItemStack gunStack) {
+        int count = getAmmoCount(gunStack);
+
+        return count < TACZRecruitsUtils.getGunTargetAmmo(gunStack);
+    }
+
+    private int getAmmoCount(ItemStack gunStack) {
+        int count = 0;
+
+        if(gunStack.getItem() instanceof AbstractGunItem) {
+            for(ItemStack itemStack : this.inventory.items) {
+                Item item = itemStack.getItem();
+
+                if(item instanceof AmmoItem ammoItem) {
+                    if(ammoItem.isAmmoOfGun(gunStack, itemStack)) {
+                        count += itemStack.getCount();
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
+
+    @Shadow(remap = false)
+    public boolean canEatItemStack(ItemStack stack) {
+        throw new AssertionError();
+    }
+
+    @Override
+    public TargetMarker getLastKnownEnemyPos() {
+        return lastKnownEnemyPos;
+    }
+
+    @Override
+    public void setLastKnownEnemyPos(TargetMarker lastKnownEnemyPos) {
+        this.lastKnownEnemyPos = lastKnownEnemyPos;
     }
 }

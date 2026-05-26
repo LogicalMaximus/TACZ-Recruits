@@ -36,10 +36,10 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
     private BlockPos coverPos;
     private Path coverPath;
     private int revalidateTicks = 0;
-    private static final int REVALIDATE_INTERVAL = 60; // re-issue path every N ticks
-    private static final int RING_SAMPLES = 16; // samples per ring
-    private static final int MAX_RINGS = 8; // how many rings to check (increase coverage)
-    private static final int MIN_DISTANCE_TO_COVER_SQ = 2; // 2 blocks^2
+    private static final int REVALIDATE_INTERVAL = 60;
+    private static final int RING_SAMPLES = 16;
+    private static final int MAX_RINGS = 8;
+    private static final int MIN_DISTANCE_TO_COVER_SQ = 2;
 
     public RecruitsFindCoverFromTargetGoal(T mob, double speed) {
         this.mob = mob;
@@ -62,14 +62,14 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
             this.attacker = this.mob.getTarget();
 
             if(this.attacker == null) {
-                List<EntityKineticBullet> entities = this.mob.level().getEntitiesOfClass(EntityKineticBullet.class, this.mob.getBoundingBox().inflate((Integer) TACZRecruitsConfig.BULLET_SUPPRESSION_RADIUS.get() * 1.5));
+                List<Projectile> entities = this.mob.level().getEntitiesOfClass(Projectile.class, this.mob.getBoundingBox().inflate((Integer) TACZRecruitsConfig.BULLET_SUPPRESSION_RADIUS.get() * 1.5));
 
                 if(!entities.isEmpty()) {
-                    Stream<EntityKineticBullet> abstractArrowStream = entities.stream().filter((e) -> e.getOwner() instanceof LivingEntity entity && this.mob.canAttack(entity) && this.mob.shouldAttack(entity) && entity.getMainHandItem().getItem() instanceof IGun);
+                    Stream<Projectile> abstractArrowStream = entities.stream().filter((e) -> e.getOwner() instanceof LivingEntity entity && this.mob.canAttack(entity) && this.mob.shouldAttack(entity) && entity.getMainHandItem().getItem() instanceof IGun);
 
                     entities.sort(Comparator.comparingDouble(this.mob::distanceToSqr));
 
-                    Optional<EntityKineticBullet> optionalEntityKineticBullet = entities.stream().findAny();
+                    Optional<Projectile> optionalEntityKineticBullet = entities.stream().findAny();
 
                     if(optionalEntityKineticBullet.isPresent()) {
                         Entity owner = optionalEntityKineticBullet.get().getOwner();
@@ -119,14 +119,11 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
         if (this.attacker == null || !this.attacker.isAlive()) return false;
         if (this.coverPos == null) return false;
 
-        // Stop if attacker no longer sees the mob
         if (!canBeSeenBy(attacker, mob)) return false;
 
-        // Stop if we are sufficiently close to cover
         double distSq = this.mob.distanceToSqr(Vec3.atCenterOf(this.coverPos));
         if (distSq <= MIN_DISTANCE_TO_COVER_SQ) return false;
 
-        // Otherwise, continue as long as the nav still has work or our path is valid
         return !this.mob.getNavigation().isDone();
     }
 
@@ -167,9 +164,6 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
         this.attacker = null;
     }
 
-    // ---------------------
-    // COVER SEARCH
-    // ---------------------
     private BlockPos findCover() {
         Level level = mob.level();
         BlockPos mobPos = this.mob.blockPosition();
@@ -177,7 +171,6 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
         BlockPos best = null;
         double bestDistSq = Double.MAX_VALUE;
 
-        // Search expanding rings around mob (deterministic and directional)
         for (int ring = 1; ring <= Math.min(MAX_RINGS, searchRadius); ring++) {
             int ringRadius = ring; // ring radius in blocks
             int samples = RING_SAMPLES;
@@ -188,22 +181,16 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
                 double dz = Math.round(Math.sin(angle) * ringRadius);
                 BlockPos sample = mobPos.offset((int)dx, 0, (int)dz);
 
-                // Scan vertically to find a standable spot (top-most non-solid space with solid under)
                 BlockPos standing = findStandable(level, sample);
                 if (standing == null) continue;
 
-                // Candidate center point to check LOS to
                 Vec3 sampleCenter = Vec3.atCenterOf(standing);
 
-                // If attacker cannot see this candidate (i.e., it's blocked) -> candidate cover
-                // Note: we check LOS from attacker's eye to a point slightly above ground (center)
                 if (!hasLineOfSight(level, attackerEye, sampleCenter)) {
-                    // Check pathability: see if the mob's navigation can reach it
                     PathNavigation nav = mob.getNavigation();
                     Path path = nav.createPath(standing, 1);
-                    if (path == null) continue; // unreachable
+                    if (path == null) continue;
 
-                    // prefer nearer positions
                     double dsq = mob.distanceToSqr(sampleCenter);
                     if (dsq < bestDistSq) {
                         bestDistSq = dsq;
@@ -239,11 +226,10 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
      * Returns the BlockPos of the air-space where the mob should stand (y), or null if none.
      */
     private BlockPos findStandable(Level level, BlockPos sample) {
-        // We look from mob's Y-2 .. Y+2 to allow some vertical variance
         int baseY = this.mob.blockPosition().getY();
         for (int dy = -2; dy <= 2; dy++) {
             BlockPos pos = new BlockPos(sample.getX(), baseY + dy, sample.getZ());
-            // require the block at pos to be air (space for body) and block below to be solid ground
+
             if (level.isEmptyBlock(pos) && level.isEmptyBlock(pos.above()) && level.getBlockState(pos.below()).isCollisionShapeFullBlock(level, pos.below())) {
                 return pos;
             }
@@ -251,9 +237,6 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
         return null;
     }
 
-    // ---------------------
-    // LINE-OF-SIGHT HELPERS
-    // ---------------------
     private static boolean canBeSeenBy(LivingEntity viewer, Entity target) {
         Level level = viewer.level();
         Vec3 from = viewer.getEyePosition();

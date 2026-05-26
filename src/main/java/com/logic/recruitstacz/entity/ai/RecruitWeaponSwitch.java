@@ -68,7 +68,7 @@ public class RecruitWeaponSwitch<T extends AbstractRecruitEntity> extends Goal {
                 if(target != null && !target.isDeadOrDying()) {
                     float distance = this.recruit.distanceTo(target);
 
-                    if(target.getVehicle() != null || this.isEnemiesClusteredNearTarget(target, 6, 4)) {
+                    if(TACZRecruitsConfig.SHOULD_RECRUITS_VEHICLE_WEAPON_SWITCH.get() && target.getVehicle() != null || TACZRecruitsConfig.SHOULD_RECRUITS_CLUSTER_WEAPON_SWITCH.get() && this.isEnemiesClusteredNearTarget(target, TACZRecruitsConfig.WEAPON_SWITCH_CLUSTER_RADIUS.get(), TACZRecruitsConfig.WEAPON_SWITCH_CLUSTER_MINIMUM_TARGETS.get())) {
 
                         if(bulletData.getExplosionData() == null || bulletData.getExplosionData() != null && !bulletData.getExplosionData().isExplode()) {
                             this.gunSlot = this.findATGunItemWithAmmo();
