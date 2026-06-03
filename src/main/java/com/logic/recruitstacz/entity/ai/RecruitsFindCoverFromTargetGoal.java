@@ -65,9 +65,9 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
                 List<Projectile> entities = this.mob.level().getEntitiesOfClass(Projectile.class, this.mob.getBoundingBox().inflate((Integer) TACZRecruitsConfig.BULLET_SUPPRESSION_RADIUS.get() * 1.5));
 
                 if(!entities.isEmpty()) {
-                    Stream<Projectile> abstractArrowStream = entities.stream().filter((e) -> e.getOwner() instanceof LivingEntity entity && this.mob.canAttack(entity) && this.mob.shouldAttack(entity) && entity.getMainHandItem().getItem() instanceof IGun);
+                    List<Projectile> abstractArrowStream = new java.util.ArrayList<>(entities.stream().filter((e) -> e.getOwner() instanceof LivingEntity entity && this.mob.canAttack(entity) && this.mob.shouldAttack(entity) && entity.getMainHandItem().getItem() instanceof IGun).toList());
 
-                    entities.sort(Comparator.comparingDouble(this.mob::distanceToSqr));
+                    abstractArrowStream.sort(Comparator.comparingDouble(this.mob::distanceToSqr));
 
                     Optional<Projectile> optionalEntityKineticBullet = entities.stream().findAny();
 
@@ -89,11 +89,14 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
 
             if (this.attacker == null || !this.attacker.isAlive()) return false;
 
+            /*
             if(this.attacker instanceof Mob mobAttacker) {
                 if(!mobAttacker.getSensing().hasLineOfSight(this.mob)) return false;
             } else {
                 if (!canBeSeenBy(attacker, mob)) return false;
             }
+
+             */
 
             this.coverPos = findCover();
             if (this.coverPos == null) return false;
@@ -119,7 +122,7 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
         if (this.attacker == null || !this.attacker.isAlive()) return false;
         if (this.coverPos == null) return false;
 
-        if (!canBeSeenBy(attacker, mob)) return false;
+        if (!attacker.hasLineOfSight(mob)) return false;
 
         double distSq = this.mob.distanceToSqr(Vec3.atCenterOf(this.coverPos));
         if (distSq <= MIN_DISTANCE_TO_COVER_SQ) return false;
@@ -245,11 +248,8 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
     }
 
     private static boolean hasLineOfSight(Level level, Vec3 from, Vec3 to) {
-        // If ray hits something before reaching `to`, then LOS is blocked.
         ClipContext context = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null);
         HitResult result = level.clip(context);
-        // MISS means no block was hit between the two points -> clear sight
-        // If result is BLOCK, it's blocking; if it's MISS we treat as visible.
         return result.getType() == HitResult.Type.MISS;
     }
 }

@@ -23,6 +23,7 @@ public class TACZRecruitsConfig {
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_USE_SUPPRESSIVE_FIRE;
     public static final ForgeConfigSpec.ConfigValue<Integer> RECRUIT_POSE_COOLDOWN;
     public static final ForgeConfigSpec.ConfigValue<Float> RECRUIT_POSE_CHANCE;
+    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUIT_PRONE;
 
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_WEAPON_SWITCH;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_CLUSTER_WEAPON_SWITCH;
@@ -80,6 +81,7 @@ public class TACZRecruitsConfig {
 
         SHOULD_RECRUITS_USE_WEAPON_WHEN_MOUNTED = BUILDER.comment("\nWhether Recruits Should Use Their Weapons While Mounted \n\t(Recommend You Turn Off If Using Vehicle Mod Like Superb Warfare)").define("ShouldRecruitUseWeaponWhileMounted", true);
         WEAPON_SHOOT_COOLDOWN = BUILDER.comment("\n The Cooldown In Ticks In Between Each Shot \n\t(takes effect after restart)").define("WeaponShootCooldown", 0);
+        SHOULD_RECRUIT_PRONE = BUILDER.comment("\n Whether Recruits Should Go Prone \n\t(takes effect after restart)").define("ShouldProneWhilePosing", true);
 
         BUILDER.pop();
 

@@ -14,9 +14,8 @@
     "tacz.MixinLivingEntityAmmoCheck"
   ],
   "client": [
-    "client.MixinRecruitHumanRenderer",
-    "client.MixinRecruitVillagerModel",
-    "client.MixinRecruitVillagerRenderer"
+    "client.MixinLivingEntityRenderer",
+    "client.MixinRecruitVillagerModel"
   ],
   "injectors": {
     "defaultRequire": 1

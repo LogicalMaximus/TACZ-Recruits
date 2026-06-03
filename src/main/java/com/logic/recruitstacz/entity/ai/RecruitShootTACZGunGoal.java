@@ -46,7 +46,7 @@ public class RecruitShootTACZGunGoal extends Goal {
 
         this.target = this.recruit.getTarget();
 
-        if(this.target != null) {
+        if(this.target != null && !this.target.isDeadOrDying()) {
             if(!this.recruit.getSensing().hasLineOfSight(this.target))
                 return false;
 
@@ -72,6 +72,7 @@ public class RecruitShootTACZGunGoal extends Goal {
 
     @Override
     public void stop() {
+        this.target = null;
         ((IGunOperator)recruit).aim(false);
         super.stop();
     }

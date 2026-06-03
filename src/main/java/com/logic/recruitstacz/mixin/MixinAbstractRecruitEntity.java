@@ -5,7 +5,9 @@ import com.logic.recruitstacz.TACZRecruitsUtils;
 import com.logic.recruitstacz.bridge.IPoser;
 import com.logic.recruitstacz.bridge.ISpotter;
 import com.logic.recruitstacz.bridge.ISwapper;
+import com.logic.recruitstacz.config.TACZRecruitsConfig;
 import com.logic.recruitstacz.entity.ai.*;
+import com.tacz.guns.api.entity.IGunOperator;
 import com.tacz.guns.api.item.IGun;
 import com.tacz.guns.api.item.gun.AbstractGunItem;
 import com.tacz.guns.item.AmmoItem;
@@ -125,7 +127,10 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
     public void changePose() {
         if(this.getPose() == Pose.STANDING) {
             this.setPose(Pose.CROUCHING);
+        } else if(this.getPose() == Pose.CROUCHING && TACZRecruitsConfig.SHOULD_RECRUIT_PRONE.get()) {
+            ((IGunOperator)this).crawl(true);
         } else {
+            ((IGunOperator)this).crawl(false);
             this.setPose(Pose.STANDING);
         }
     }
@@ -138,6 +143,11 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
     @Override
     public int getPoseCooldown() {
         return poseCooldown;
+    }
+
+
+    public EntityDimensions getDimensions(Pose pose) {
+        return POSES.getOrDefault(pose, STANDING_DIMENSIONS);
     }
 
     /**
