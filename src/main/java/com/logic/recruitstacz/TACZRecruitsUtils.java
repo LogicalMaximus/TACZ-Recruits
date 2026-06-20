@@ -12,13 +12,16 @@ import com.tacz.guns.resource.pojo.data.gun.GunData;
 import com.talhanation.recruits.entities.AbstractRecruitEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
+import java.util.Random;
 
 public class TACZRecruitsUtils {
+    public static final Random random = new Random();
 
     @javax.annotation.Nullable
     public static double getGunInaccuracy(ItemStack gunStack) {
@@ -179,5 +182,14 @@ public class TACZRecruitsUtils {
         }
 
         return null;
+    }
+
+    public static boolean targetHasLineOfSight(LivingEntity mob, LivingEntity attacker) {
+        if(attacker instanceof Mob mobAttacker && mobAttacker.getSensing().hasLineOfSight(mob)) {
+            return true;
+        } else if (attacker.hasLineOfSight(mob)) {
+            return true;
+        }
+        return false;
     }
 }

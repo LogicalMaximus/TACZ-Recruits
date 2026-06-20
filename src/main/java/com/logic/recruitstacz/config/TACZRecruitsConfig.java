@@ -16,6 +16,7 @@ public class TACZRecruitsConfig {
     public static final ForgeConfigSpec.ConfigValue<Double> SUPPRESSIVE_FIRE_INACCURACY_MULTIPLIER;
     public static final ForgeConfigSpec.ConfigValue<Integer> RECRUIT_COVER_RADIUS;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_RUN_TO_COVER;
+    public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_ADVANCE_ON_TARGET;
     public static final ForgeConfigSpec.ConfigValue<Integer> BULLET_SUPPRESSION_RADIUS;
     public static final ForgeConfigSpec.ConfigValue<Integer> WEAPON_SHOOT_COOLDOWN;
 
@@ -25,6 +26,8 @@ public class TACZRecruitsConfig {
     public static final ForgeConfigSpec.ConfigValue<Float> RECRUIT_POSE_CHANCE;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUIT_PRONE;
 
+    public static final ForgeConfigSpec.ConfigValue<Integer> ADVANCE_DISTANCE;
+    public static final ForgeConfigSpec.ConfigValue<Double> RECRUIT_TARGET_RADIUS;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_WEAPON_SWITCH;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_CLUSTER_WEAPON_SWITCH;
     public static final ForgeConfigSpec.ConfigValue<Boolean> SHOULD_RECRUITS_VEHICLE_WEAPON_SWITCH;
@@ -82,6 +85,7 @@ public class TACZRecruitsConfig {
         SHOULD_RECRUITS_USE_WEAPON_WHEN_MOUNTED = BUILDER.comment("\nWhether Recruits Should Use Their Weapons While Mounted \n\t(Recommend You Turn Off If Using Vehicle Mod Like Superb Warfare)").define("ShouldRecruitUseWeaponWhileMounted", true);
         WEAPON_SHOOT_COOLDOWN = BUILDER.comment("\n The Cooldown In Ticks In Between Each Shot \n\t(takes effect after restart)").define("WeaponShootCooldown", 0);
         SHOULD_RECRUIT_PRONE = BUILDER.comment("\n Whether Recruits Should Go Prone \n\t(takes effect after restart)").define("ShouldProneWhilePosing", true);
+        RECRUIT_TARGET_RADIUS = BUILDER.comment("\n The Radius At Which Recruits Will Search For Targets \n\t(takes effect after restart)").define("RecruitsTargetRadius", 64.0);
 
         BUILDER.pop();
 
@@ -89,6 +93,8 @@ public class TACZRecruitsConfig {
 
         RECRUIT_COVER_RADIUS = BUILDER.comment("How Far Recruits Will Run For Cover").define("RecruitCoverRadius", 16);
         SHOULD_RECRUITS_RUN_TO_COVER = BUILDER.comment("Whether Recruits Should Run To Cover From Enemies").define("ShouldRecruitsRunToCover", true);
+        SHOULD_RECRUITS_ADVANCE_ON_TARGET = BUILDER.comment("Whether Recruits Should Move Toward Targets If Not Seen").define("ShouldRecruitsAdvanceOnTargets", true);
+        ADVANCE_DISTANCE  = BUILDER.comment("How Far Will A Recruit Attempt To Advance At Once").define("RecruitsAdvanceDistance", 8);
 
         BUILDER.pop();
 

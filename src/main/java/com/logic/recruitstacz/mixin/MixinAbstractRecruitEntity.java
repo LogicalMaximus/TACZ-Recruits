@@ -15,15 +15,21 @@ import com.talhanation.recruits.Main;
 import com.talhanation.recruits.compat.musketmod.IWeapon;
 import com.talhanation.recruits.config.RecruitsServerConfig;
 import com.talhanation.recruits.entities.*;
+import com.talhanation.recruits.entities.ai.async.AsyncManager;
+import com.talhanation.recruits.entities.ai.async.AsyncTaskWithCallback;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
-import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -34,7 +40,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Mixin(AbstractRecruitEntity.class)
 public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity implements IPoser, ISwapper, ISpotter {
@@ -44,6 +55,9 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
 
     @Unique
     private static final Map<Pose, EntityDimensions> POSES = ImmutableMap.<Pose, EntityDimensions>builder().put(Pose.STANDING, STANDING_DIMENSIONS).put(Pose.SLEEPING, SLEEPING_DIMENSIONS).put(Pose.FALL_FLYING, EntityDimensions.scalable(0.6F, 0.6F)).put(Pose.SWIMMING, EntityDimensions.scalable(0.6F, 0.6F)).put(Pose.SPIN_ATTACK, EntityDimensions.scalable(0.6F, 0.6F)).put(Pose.CROUCHING, EntityDimensions.scalable(0.6F, 1.5F)).put(Pose.DYING, EntityDimensions.fixed(0.2F, 0.2F)).build();
+
+    @Shadow(remap = false)
+    public TargetingConditions targetingConditions;
 
     @Unique
     private int poseCooldown;
@@ -65,6 +79,7 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
         this.goalSelector.addGoal(3, new RecruitsChangePoseGoal<>(((AbstractRecruitEntity)(Object)this)));
         this.goalSelector.addGoal(3, new RecruitSuppressTACZGunGoal(((AbstractRecruitEntity)(Object)this)));
         this.goalSelector.addGoal(3, new RecruitWeaponSwitch(((AbstractRecruitEntity)(Object)this)));
+        this.goalSelector.addGoal(3, new RecruitsAdvanceToTargetGoal(((AbstractRecruitEntity)(Object)this)));
     }
 
     /**
@@ -77,6 +92,61 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
             return (double)3.0F;
         } else {
             return 32;
+        }
+    }
+
+    /**
+     * @author
+     * @reason Adds Customizable Search Radius
+     */
+    @Overwrite(remap=false)
+    private void searchForTargetsAsync(ServerLevel serverLevel) {
+        AABB searchBox = this.getBoundingBox().inflate((double)TACZRecruitsConfig.RECRUIT_TARGET_RADIUS.get());
+        List<LivingEntity> nearby = serverLevel.getEntitiesOfClass(LivingEntity.class, searchBox, (entity) -> entity != this);
+        Supplier<List<LivingEntity>> findTargetsTask = () -> {
+            List<LivingEntity> copy = new ArrayList(nearby);
+            copy.removeIf((potTarget) -> !this.targetingConditions.test(this, potTarget));
+            copy.sort(Comparator.comparingDouble((e) -> e.distanceToSqr(this)));
+            return copy.stream().limit(10L).toList();
+        };
+        Consumer<List<LivingEntity>> handleTargets = (targets) -> {
+            if (!targets.isEmpty()) {
+                this.setTarget((LivingEntity)targets.get(this.getRandom().nextInt(targets.size())));
+            }
+
+        };
+        AsyncManager.executor.execute(new AsyncTaskWithCallback(findTargetsTask, handleTargets, serverLevel));
+    }
+
+    /**
+     * @author
+     * @reason Adds Customizable Search Radius
+     */
+    @Overwrite(remap=false)
+    private void searchForTargetsSync(ServerLevel serverLevel) {
+        AABB searchBox = this.getBoundingBox().inflate((double)TACZRecruitsConfig.RECRUIT_TARGET_RADIUS.get());
+        List<LivingEntity> nearby = serverLevel.getEntitiesOfClass(LivingEntity.class, searchBox, (entity) -> entity != this);
+        nearby.removeIf((potTarget) -> !this.targetingConditions.test(this, potTarget));
+        nearby.sort(Comparator.comparingDouble((e) -> e.distanceToSqr(this)));
+        if (!nearby.isEmpty()) {
+            LivingEntity target = (LivingEntity)nearby.stream().limit(10L).toList().get(this.getRandom().nextInt(Math.min(10, nearby.size())));
+            this.setTarget(target);
+        }
+
+    }
+
+    @Override
+    public boolean hasLineOfSight(Entity p_147185_) {
+        if (p_147185_.level() != this.level()) {
+            return false;
+        } else {
+            Vec3 vec3 = new Vec3(this.getX(), this.getEyeY(), this.getZ());
+            Vec3 vec31 = new Vec3(p_147185_.getX(), p_147185_.getEyeY(), p_147185_.getZ());
+            if (vec31.distanceTo(vec3) > 1000.0D) {
+                return false;
+            } else {
+                return this.level().clip(new ClipContext(vec3, vec31, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)).getType() == HitResult.Type.MISS;
+            }
         }
     }
 
