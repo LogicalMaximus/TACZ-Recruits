@@ -64,6 +64,7 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
     @Override
     public boolean canUse() {
         if (!TACZRecruitsConfig.SHOULD_RECRUITS_RUN_TO_COVER.get()) return false;
+        if(this.mob.getVehicle() == null) return false;
         if (this.mob.getFollowState() != 0 || this.mob.getShouldFollow() || this.mob.getShouldMovePos())  return false;
         if(!(this.mob.getMainHandItem().getItem() instanceof ModernKineticGunItem)) return false;
 
@@ -290,8 +291,6 @@ public class RecruitsFindCoverFromTargetGoal<T extends AbstractRecruitEntity> ex
 
     private boolean vectorLineOfSight(Vec3 from, Vec3 to) {
         ClipContext ctx = new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null);
-        return level().clip(ctx).getType() == HitResult.Type.MISS;
+        return this.mob.level().clip(ctx).getType() == HitResult.Type.MISS;
     }
-
-    private Level level() { return mob.level(); }
 }

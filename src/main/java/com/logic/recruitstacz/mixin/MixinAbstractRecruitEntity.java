@@ -100,37 +100,13 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
      * @reason Adds Customizable Search Radius
      */
     @Overwrite(remap=false)
-    private void searchForTargetsAsync(ServerLevel serverLevel) {
-        AABB searchBox = this.getBoundingBox().inflate((double)TACZRecruitsConfig.RECRUIT_TARGET_RADIUS.get());
-        List<LivingEntity> nearby = serverLevel.getEntitiesOfClass(LivingEntity.class, searchBox, (entity) -> entity != this);
-        Supplier<List<LivingEntity>> findTargetsTask = () -> {
-            List<LivingEntity> copy = new ArrayList(nearby);
-            copy.removeIf((potTarget) -> !this.targetingConditions.test(this, potTarget));
-            copy.sort(Comparator.comparingDouble((e) -> e.distanceToSqr(this)));
-            return copy.stream().limit(10L).toList();
-        };
-        Consumer<List<LivingEntity>> handleTargets = (targets) -> {
-            if (!targets.isEmpty()) {
-                this.setTarget((LivingEntity)targets.get(this.getRandom().nextInt(targets.size())));
-            }
-
-        };
-        AsyncManager.executor.execute(new AsyncTaskWithCallback(findTargetsTask, handleTargets, serverLevel));
-    }
-
-    /**
-     * @author
-     * @reason Adds Customizable Search Radius
-     */
-    @Overwrite(remap=false)
     private void searchForTargetsSync(ServerLevel serverLevel) {
         AABB searchBox = this.getBoundingBox().inflate((double)TACZRecruitsConfig.RECRUIT_TARGET_RADIUS.get());
         List<LivingEntity> nearby = serverLevel.getEntitiesOfClass(LivingEntity.class, searchBox, (entity) -> entity != this);
         nearby.removeIf((potTarget) -> !this.targetingConditions.test(this, potTarget));
         nearby.sort(Comparator.comparingDouble((e) -> e.distanceToSqr(this)));
         if (!nearby.isEmpty()) {
-            LivingEntity target = (LivingEntity)nearby.stream().limit(10L).toList().get(this.getRandom().nextInt(Math.min(10, nearby.size())));
-            this.setTarget(target);
+            nearby.stream().findFirst().ifPresent((this::setTarget));
         }
 
     }
@@ -182,6 +158,20 @@ public abstract class MixinAbstractRecruitEntity extends AbstractInventoryEntity
     public void tick(CallbackInfo ci) {
         poseCooldown--;
         weaponSwitchCooldown--;
+
+        if(this.isAlive() && this.getState() != 3 && (this.tickCount & 2) == 0) {
+            this.searchForTargets();
+        }
+    }
+
+    @Shadow(remap = false)
+    public void searchForTargets() {
+        throw new AssertionError();
+    }
+
+    @Shadow(remap = false)
+    public int getState() {
+        throw new AssertionError();
     }
 
     @Inject(method = "needsToGetFood", at = @At("HEAD"), cancellable = true, remap = false)
